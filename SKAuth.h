@@ -117,12 +117,36 @@ public:
     // Public fields populated after Login()
     std::string username, plan, expires, apiKey, sessionId, email, hwid;
 
-    SKAuth(const std::string& appId, const std::string& version = "1.0")
-        : _appId(appId), _version(version), _hwid(GetHWID())
+    SKAuth(const std::string& appId, const std::string& version = "1.0", const std::string& secret = "")
+        : _appId(appId), _version(version), _secret(secret), _hwid(GetHWID())
     {
         CheckSecurity();
         Init();
         StartAntiDllInjectionMonitor();
+    }
+
+    std::string ParseSecureResponse(const std::string& resp)
+    {
+        bool ok = JsonBool(resp, "ok");
+        std::string encStr = JsonStr(resp, "enc");
+        if (!encStr.empty())
+        {
+            std::string sig = JsonStr(resp, "sig");
+            if (!sig.empty() && !_secret.empty())
+            {
+                std::string computedSig = ComputeHmacHex(encStr, _secret);
+                if (sig != computedSig)
+                {
+                    ReportSecurityFlag("packet_tampering", "HMAC signature mismatch detected on AES payload");
+                    MessageBoxW(NULL, L"Security Violation: Network packet tampering detected.", L"Onyx Gate Security", MB_OK | MB_ICONERROR);
+                    TerminateProcess(GetCurrentProcess(), 0);
+                    return "{\"ok\":false,\"message\":\"Packet tampering detected\"}";
+                }
+            }
+            std::string decrypted = DecryptAes256(encStr, _secret);
+            return decrypted.empty() ? resp : decrypted;
+        }
+        return resp;
     }
 
     bool Init()
@@ -132,7 +156,8 @@ public:
             {"hwid", _hwid},
             {"version", _version}
         });
-        auto resp = HttpPost(L"/sdk/init", body);
+        auto rawResp = HttpPost(L"/sdk/init", body);
+        auto resp = ParseSecureResponse(rawResp);
         bool ok = JsonBool(resp, "ok");
         if (!ok)
         {
@@ -154,7 +179,8 @@ public:
     bool checkban(const std::string& username = "")
     {
         auto body = BuildJson({{"appId", _appId}, {"hwid", _hwid}, {"username", username}});
-        auto resp = HttpPost(L"/sdk/check-ban", body);
+        auto rawResp = HttpPost(L"/sdk/check-ban", body);
+        auto resp = ParseSecureResponse(rawResp);
         bool ok = JsonBool(resp, "ok");
         if (!ok)
         {
@@ -331,11 +357,13 @@ public:
     AuthResult Login(const std::string& user, const std::string& pass)
     {
         CheckSecurity();
+        checkban(user);
         auto body = BuildJson({
             {"appId",_appId},{"username",user},{"password",pass},
             {"hwid",_hwid},{"version",_version}
         });
-        auto resp = HttpPost(L"/sdk/login", body);
+        auto rawResp = HttpPost(L"/sdk/login", body);
+        auto resp = ParseSecureResponse(rawResp);
         bool ok = JsonBool(resp, "ok");
         if (ok)
         {
