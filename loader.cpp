@@ -7,7 +7,7 @@
 // ╔══════════════════════════════════════════════════════════╗
 // ║  ONLY CHANGE THESE — paste from your dashboard          ║
 // ╚══════════════════════════════════════════════════════════╝
-#define APP_ID_RAW      "YOUR_APP_ID_HERE"
+#define APP_ID_RAW      "6a6356f72c9481f42186ef1b"
 #define APP_VERSION_RAW "1.0"
 
 // String obfuscation — hides the above from memory scanners
@@ -384,7 +384,7 @@ void CheatMenu(SKAuth& auth)
             }
             break;
 
-        case 5: {
+        case 6: {
             // GetVar — fetch a message/value set in your dashboard
             // Dashboard → Settings → Variables → add "message" key
             std::string msg = auth.GetVar("message");
@@ -413,9 +413,8 @@ int main()
     SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cci);
     SetConsoleTitleA("Script Kittens Loader");
 
-    // Init auth & perform blacklisted device pre-check
+    // Init auth with XOR-obfuscated strings
     SKAuth auth(APP_ID, APP_VERSION);
-    auth.Init();
 
     Lockout lockout;
 

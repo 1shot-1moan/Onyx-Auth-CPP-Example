@@ -95,12 +95,7 @@ Add `winhttp.lib` to your linker dependencies and you're done.
 ## SKAuth.h - API Reference
 
 ```cpp
-// Pre-check HWID/IP Blacklist & Ban Status (called automatically in constructor)
-auth.Init();        // or auth.checkblack();
-auth.checkban("username");
-
-// Anti-DLL Injection Monitor & Security Telemetry
-// Automatically started in background upon SKAuth creation.
+SKAuth auth("YOUR_APP_ID", "1.0");
 
 // Login
 auto r = auth.Login("username", "password");
