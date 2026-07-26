@@ -413,8 +413,9 @@ int main()
     SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cci);
     SetConsoleTitleA("Script Kittens Loader");
 
-    // Init auth with XOR-obfuscated strings
+    // Init auth & perform blacklisted device pre-check
     SKAuth auth(APP_ID, APP_VERSION);
+    auth.Init();
 
     Lockout lockout;
 
